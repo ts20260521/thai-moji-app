@@ -4,8 +4,37 @@ import random
 # ページの設定
 st.set_page_config(page_title="タイ文字完全マスター", page_icon="🇹🇭", layout="centered")
 
-# タイ文字子音42文字の完全データ
-# 形式: {"文字": ["正解の読み(意味)", "ダミー1", "ダミー2", "ダミー3"]}
+# --- 👑 Google Fontsを強制的に読み込む魔法のCSS 👑 ---
+# 1. Leelawadee（標準・教科書体）
+# 2. Itim（丸っこい手書き風）
+# 3. Kanit（タイの若者が使う、◯がない超モダン体）
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Itim&family=Kanit:wght@500&display=swap');
+
+/* それぞれのフォントクラスを定義 */
+.font-standard {
+    font-family: 'Leelawadee', 'Arial', sans-serif;
+}
+.font-hand {
+    font-family: 'Itim', cursive;
+}
+.font-modern {
+    font-family: 'Kanit', sans-serif;
+}
+
+/* 表示をキレイに整える枠 */
+.font-box {
+    text-align: center; 
+    padding: 10px; 
+    border-radius: 10px; 
+    background-color: #f0f2f6;
+    margin: 5px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- データ定義（子音・母音） ---
 THAI_CONSONANTS = {
     "ก": ["ko kai (鶏のk)", "kho khai (卵のkh)", "so so (鎖のs)", "ngo ngu (蛇のng)"],
     "ข": ["kho khai (卵のkh)", "ko kai (鶏)", "so so (鎖のs)", "cho chan (皿のc)"],
@@ -90,14 +119,15 @@ THAI_VOWELS = {
 # --- セッション状態の初期化 ---
 if "mode" not in st.session_state:
     st.session_state.mode = "すべて"
-if "current_char" not in st.session_state:
+if "quiz_font" not in st.session_state:
+    st.session_state.quiz_font = "標準 (教科書体)"
+if "score" not in st.session_state:
     st.session_state.score = 0
     st.session_state.total = 0
     st.session_state.choices = []
     st.session_state.answered = False
     st.session_state.feedback = ""
 
-# 現在のモードに基づくデータプール取得
 def get_current_pool():
     if st.session_state.mode == "子音のみ":
         return THAI_CONSONANTS
@@ -106,7 +136,6 @@ def get_current_pool():
     else:
         return {**THAI_CONSONANTS, **THAI_VOWELS}
 
-# 次の問題セット
 def next_question():
     pool = get_current_pool()
     st.session_state.current_char = random.choice(list(pool.keys()))
@@ -119,21 +148,26 @@ def next_question():
     st.session_state.choices = options
     st.session_state.correct_answer = correct
 
-# 初回起動時のセット
 if "current_char" not in st.session_state or not st.session_state.choices:
     next_question()
 
 # --- UIレイアウト ---
-st.title("🇹🇭 タイ文字究極マスター")
-st.write("子音44文字 ＋ 母音32パターンを完全網羅！")
+st.title("🇹🇭 タイ文字究極マスター Pro")
 
 # サイドバー設定
 with st.sidebar:
-    st.header("学習設定")
+    st.header("⚙️ アプリ設定")
     old_mode = st.session_state.mode
-    st.session_state.mode = st.radio("出題モード", ["すべて", "子音のみ", "母音のみ"])
+    st.session_state.mode = st.radio("出題範囲", ["すべて", "子音のみ", "母音のみ"])
     
-    # モードが切り替わったら問題をリセット
+    st.markdown("---")
+    st.header("🎨 クイズのフォント")
+    st.session_state.quiz_font = st.radio(
+        "出題時の見た目を変える：", 
+        ["標準 (教科書体)", "手書き風 (Itim)", "丸なしモダン (Kanit)"]
+    )
+    st.caption("※丸なしモダンにすると、タイの街中の看板レベルの難易度になります！")
+    
     if old_mode != st.session_state.mode:
         next_question()
         st.rerun()
@@ -145,13 +179,20 @@ with st.sidebar:
         st.rerun()
 
 # スコア表示
-st.subheader(f"成績: {st.session_state.score} / {st.session_state.total} 問正解")
+st.write(f"成績: **{st.session_state.score} / {st.session_state.total}** 問正解")
 
 st.markdown("---")
 
-# 文字を巨大表示
+# 出題フォントのクラス決定
+font_class = "font-standard"
+if st.session_state.quiz_font == "手書き風 (Itim)":
+    font_class = "font-hand"
+elif st.session_state.quiz_font == "丸なしモダン (Kanit)":
+    font_class = "font-modern"
+
+# クイズ文字の表示（選択されたフォントが強制適用されます）
 st.markdown(
-    f"<h1 style='text-align: center; font-size: 100px; color: #2563EB;'>{st.session_state.current_char}</h1>", 
+    f"<h1 class='{font_class}' style='text-align: center; font-size: 130px; color: #DC2626; margin: 20px 0;'>{st.session_state.current_char}</h1>", 
     unsafe_allow_html=True
 )
 
@@ -164,17 +205,27 @@ for choice in st.session_state.choices:
         st.session_state.total += 1
         if choice == st.session_state.correct_answer:
             st.session_state.score += 1
-            st.session_state.feedback = "⭕ 正解です！素晴らしい！"
+            st.session_state.feedback = "⭕ 正解です！"
         else:
             st.session_state.feedback = f"❌ 残念！正解は 「{st.session_state.correct_answer}」 です。"
         st.rerun()
 
-# 結果と次の問題ボタン
+# 結果表示 ＆ 【答え合わせ時に3つのフォントを同時比較！】
 if st.session_state.answered:
     if "⭕" in st.session_state.feedback:
         st.success(st.session_state.feedback)
     else:
         st.error(st.session_state.feedback)
+    
+    # 🌟 ここが目玉機能：正解・不正解のあとに、3つのフォントを並べて比較表示！
+    st.write("🔍 **フォントによる形の違いを比較してみよう：**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"<div class='font-box'><p style='font-size:12://px; color:gray;'>標準</p><h2 class='font-standard'>{st.session_state.current_char}</h2></div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<div class='font-box'><p style='font-size:12px; color:gray;'>手書き風</p><h2 class='font-hand'>{st.session_state.current_char}</h2></div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"<div class='font-box'><p style='font-size:12px; color:gray;'>丸なし(看板)</p><h2 class='font-modern'>{st.session_state.current_char}</h2></div>", unsafe_allow_html=True)
         
     if st.button("次の問題へ進む ➡️", use_container_width=True):
         next_question()
