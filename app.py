@@ -4,36 +4,6 @@ import random
 # ページの設定
 st.set_page_config(page_title="タイ文字完全マスター", page_icon="🇹🇭", layout="centered")
 
-# --- 👑 Google Fontsを強制的に読み込む魔法のCSS 👑 ---
-# 1. Leelawadee（標準・教科書体）
-# 2. Itim（丸っこい手書き風）
-# 3. Kanit（タイの若者が使う、◯がない超モダン体）
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Itim&family=Kanit:wght@500&display=swap');
-
-/* それぞれのフォントクラスを定義 */
-.font-standard {
-    font-family: 'Leelawadee', 'Arial', sans-serif;
-}
-.font-hand {
-    font-family: 'Itim', cursive;
-}
-.font-modern {
-    font-family: 'Kanit', sans-serif;
-}
-
-/* 表示をキレイに整える枠 */
-.font-box {
-    text-align: center; 
-    padding: 10px; 
-    border-radius: 10px; 
-    background-color: #f0f2f6;
-    margin: 5px;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # --- データ定義（子音・母音） ---
 THAI_CONSONANTS = {
     "ก": ["ko kai (鶏のk)", "kho khai (卵のkh)", "so so (鎖のs)", "ngo ngu (蛇のng)"],
@@ -116,33 +86,50 @@ THAI_VOWELS = {
     "เกย": ["koey (特殊母音 oey)", "kui (特殊母音 ui)", "keay (特殊母音 eay)", "kiaa (長母音 iaa)"]
 }
 
+# --- 🔤 文字を画像化する魔法の関数 🔤 ---
+def create_letter_image(text, use_modern=False):
+    # 200x200マスの白い画像を作る
+    img = Image.new("RGB", (200, 200), "#F0F2F6")
+    draw = ImageDraw.Draw(img)
+    
+    # フォントの選択
+    font_path = "Kanit-Regular.ttf"
+    if use_modern and os.path.exists(font_path):
+        # 準備した丸なしモダンフォントを使う
+        try:
+            font = ImageFont.truetype(font_path, 120)
+        except:
+            font = ImageFont.load_default()
+    else:
+        # パソコンやサーバーにある標準のフォントを使う
+        try:
+            font = ImageFont.truetype("arial.ttf", 120)
+        except:
+            try:
+                font = ImageFont.truetype("DejaVuSans.ttf", 120) # Linuxサーバー用fallback
+            except:
+                font = ImageFont.load_default()
+
+    # 文字の表示位置を真ん中に調整して描画
+    position = (40, 20)
+    draw.text(position, text, fill="#1E3A8A" if not use_modern else "#DC2626", font=font)
+    return img
+
 # --- セッション状態の初期化 ---
-if "mode" not in st.session_state:
-    st.session_state.mode = "すべて"
 if "quiz_font" not in st.session_state:
     st.session_state.quiz_font = "標準 (教科書体)"
-if "score" not in st.session_state:
     st.session_state.score = 0
     st.session_state.total = 0
     st.session_state.choices = []
     st.session_state.answered = False
     st.session_state.feedback = ""
 
-def get_current_pool():
-    if st.session_state.mode == "子音のみ":
-        return THAI_CONSONANTS
-    elif st.session_state.mode == "母音のみ":
-        return THAI_VOWELS
-    else:
-        return {**THAI_CONSONANTS, **THAI_VOWELS}
-
 def next_question():
-    pool = get_current_pool()
-    st.session_state.current_char = random.choice(list(pool.keys()))
+    st.session_state.current_char = random.choice(list(THAI_CONSONANTS.keys()))
     st.session_state.answered = False
     st.session_state.feedback = ""
     
-    options = pool[st.session_state.current_char].copy()
+    options = THAI_CONSONANTS[st.session_state.current_char].copy()
     correct = options[0]
     random.shuffle(options)
     st.session_state.choices = options
@@ -152,49 +139,32 @@ if "current_char" not in st.session_state or not st.session_state.choices:
     next_question()
 
 # --- UIレイアウト ---
-st.title("🇹🇭 タイ文字究極マスター Pro")
+st.title("🇹🇭 タイ文字画像化マスター")
 
 # サイドバー設定
 with st.sidebar:
     st.header("⚙️ アプリ設定")
-    old_mode = st.session_state.mode
-    st.session_state.mode = st.radio("出題範囲", ["すべて", "子音のみ", "母音のみ"])
-    
-    st.markdown("---")
-    st.header("🎨 クイズのフォント")
     st.session_state.quiz_font = st.radio(
-        "出題時の見た目を変える：", 
-        ["標準 (教科書体)", "手書き風 (Itim)", "丸なしモダン (Kanit)"]
+        "出題時の見た目：", 
+        ["標準 (教科書体)", "丸なしモダン (Kanit)"]
     )
-    st.caption("※丸なしモダンにすると、タイの街中の看板レベルの難易度になります！")
-    
-    if old_mode != st.session_state.mode:
-        next_question()
-        st.rerun()
-        
     if st.button("スコアをリセット"):
         st.session_state.score = 0
         st.session_state.total = 0
         next_question()
         st.rerun()
 
-# スコア表示
 st.write(f"成績: **{st.session_state.score} / {st.session_state.total}** 問正解")
-
 st.markdown("---")
 
-# 出題フォントのクラス決定
-font_class = "font-standard"
-if st.session_state.quiz_font == "手書き風 (Itim)":
-    font_class = "font-hand"
-elif st.session_state.quiz_font == "丸なしモダン (Kanit)":
-    font_class = "font-modern"
+# 出題（設定されたフォントでその場で画像を作って表示！）
+is_modern = (st.session_state.quiz_font == "丸なしモダン (Kanit)")
+quiz_img = create_letter_image(st.session_state.current_char, use_modern=is_modern)
 
-# クイズ文字の表示（選択されたフォントが強制適用されます）
-st.markdown(
-    f"<h1 class='{font_class}' style='text-align: center; font-size: 100px; color: #2563EB; margin: 20px 0;'>{st.session_state.current_char}</h1>", 
-    unsafe_allow_html=True
-)
+# 画面の真ん中に画像を出すための工夫
+col_left, col_mid, col_right = st.columns([1, 2, 1])
+with col_mid:
+    st.image(quiz_img, use_container_width=True)
 
 st.markdown("---")
 
@@ -210,22 +180,24 @@ for choice in st.session_state.choices:
             st.session_state.feedback = f"❌ 残念！正解は 「{st.session_state.correct_answer}」 です。"
         st.rerun()
 
-# 結果表示 ＆ 【答え合わせ時に3つのフォントを同時比較！】
+# 答え合わせと【絶対に見れる2フォント比較】
 if st.session_state.answered:
     if "⭕" in st.session_state.feedback:
         st.success(st.session_state.feedback)
     else:
         st.error(st.session_state.feedback)
     
-    # 🌟 ここが目玉機能：正解・不正解のあとに、3つのフォントを並べて比較表示！
-    st.write("🔍 **フォントによる形の違いを比較してみよう：**")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"<div class='font-box'><p style='font-size:12://px; color:gray;'>標準</p><h2 class='font-standard'>{st.session_state.current_char}</h2></div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='font-box'><p style='font-size:12px; color:gray;'>手書き風</p><h2 class='font-hand'>{st.session_state.current_char}</h2></div>", unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"<div class='font-box'><p style='font-size:12px; color:gray;'>丸なし(看板)</p><h2 class='font-modern'>{st.session_state.current_char}</h2></div>", unsafe_allow_html=True)
+    st.write("🔍 **画像で見るフォントの形の違い：**")
+    img_standard = create_letter_image(st.session_state.current_char, use_modern=False)
+    img_modern = create_letter_image(st.session_state.current_char, use_modern=True)
+    
+    comp_col1, comp_col2 = st.columns(2)
+    with comp_col1:
+        st.caption("標準（教科書体）")
+        st.image(img_standard, use_container_width=True)
+    with comp_col2:
+        st.caption("丸なしモダン（看板）")
+        st.image(img_modern, use_container_width=True)
         
     if st.button("次の問題へ進む ➡️", use_container_width=True):
         next_question()
