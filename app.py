@@ -88,36 +88,36 @@ THAI_VOWELS = {
     "เกย": ["koey (特殊母音 oey)", "kui (特殊母音 ui)", "keay (特殊母音 eay)", "kiaa (長母音 iaa)"]
 }
 
-# --- 🔤 文字を画像化する魔法の関数（両フォントファイル読み込み版） ---
+# --- 🔤 文字を画像化する魔法の関数（横長に調整して母音に対応） ---
 def create_letter_image(text, use_modern=False):
-    # 200x200マスの白い画像を作る
-    img = Image.new("RGB", (200, 200), "#F0F2F6")
+    # 母音は文字幅が少し広くなるため、横幅を300pxに拡張
+    img = Image.new("RGB", (300, 200), "#F0F2F6")
     draw = ImageDraw.Draw(img)
     
-    # 状況に応じて読み込むフォントファイルを切り替える
     if use_modern:
         font_path = "Kanit-Regular.ttf"
     else:
-        font_path = "Sarabun-Regular.ttf" # 👈 アップロードした標準フォントを指定
+        font_path = "Sarabun-Regular.ttf"
 
-    # フォントの読み込み
     if os.path.exists(font_path):
         try:
-            font = ImageFont.truetype(font_path, 120)
+            # 母音記号が上下左右に飛び出さないよう少しサイズを調整（120 → 100）
+            font = ImageFont.truetype(font_path, 100)
         except Exception:
             font = ImageFont.load_default()
     else:
-        # 万が一ファイルが見つからない場合のセーフティネット
         try:
-            font = ImageFont.truetype("arial.ttf", 120)
+            font = ImageFont.truetype("arial.ttf", 100)
         except Exception:
             font = ImageFont.load_default()
 
-    # 文字を中央寄りに描画
-    draw.text((40, 20), text, fill="#0F172A" if not use_modern else "#DC2626", font=font)
+    # テキストを画像の中央に配置
+    draw.text((45, 30), text, fill="#0F172A" if not use_modern else "#2563EB", font=font)
     return img
 
-# --- セッション状態の初期化 ---
+# --- セッション状態（ステート）の初期化 ---
+if "mode" not in st.session_state:
+    st.session_state.mode = "すべて"
 if "quiz_font" not in st.session_state:
     st.session_state.quiz_font = "標準 (教科書体)"
 if "score" not in st.session_state:
@@ -127,6 +127,7 @@ if "score" not in st.session_state:
     st.session_state.answered = False
     st.session_state.feedback = ""
 
+# 現在のモードに合わせてデータプールを切り替える関数
 def get_current_pool():
     if st.session_state.mode == "子音のみ":
         return THAI_CONSONANTS
@@ -147,19 +148,32 @@ def next_question():
     st.session_state.choices = options
     st.session_state.correct_answer = correct
 
+# 初回起動時のセット
 if "current_char" not in st.session_state or not st.session_state.choices:
     next_question()
 
 # --- UIレイアウト ---
-st.title("🇹🇭 タイ文字画像化マスター")
+st.title("🇹🇭 タイ文字画像化マスター Ultimate")
 
 # サイドバー設定
 with st.sidebar:
     st.header("⚙️ アプリ設定")
+    
+    # 出題範囲の選択スイッチ
+    old_mode = st.session_state.mode
+    st.session_state.mode = st.radio("出題範囲", ["すべて", "子音のみ", "母音のみ"])
+    
+    st.markdown("---")
     st.session_state.quiz_font = st.radio(
         "出題時の見た目：", 
         ["標準 (教科書体)", "丸なしモダン (Kanit)"]
     )
+    
+    # モードが変わったらクイズを入れ替える
+    if old_mode != st.session_state.mode:
+        next_question()
+        st.rerun()
+        
     if st.button("スコアをリセット"):
         st.session_state.score = 0
         st.session_state.total = 0
@@ -173,7 +187,7 @@ st.markdown("---")
 is_modern = (st.session_state.quiz_font == "丸なしモダン (Kanit)")
 quiz_img = create_letter_image(st.session_state.current_char, use_modern=is_modern)
 
-col_left, col_mid, col_right = st.columns([1, 2, 1])
+col_left, col_mid, col_right = st.columns([1, 3, 1])
 with col_mid:
     st.image(quiz_img, use_container_width=True)
 
@@ -204,10 +218,10 @@ if st.session_state.answered:
     
     comp_col1, comp_col2 = st.columns(2)
     with comp_col1:
-        st.caption("標準（教科書体）")
+        st.caption("標準（教科書体・Sarabun）")
         st.image(img_standard, use_container_width=True)
     with comp_col2:
-        st.caption("丸なしモダン（看板）")
+        st.caption("丸なしモダン（看板・Kanit）")
         st.image(img_modern, use_container_width=True)
         
     if st.button("次の問題へ進む ➡️", use_container_width=True):
