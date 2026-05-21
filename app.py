@@ -192,7 +192,7 @@ elif st.session_state.quiz_font == "丸なしモダン (Kanit)":
 
 # クイズ文字の表示（選択されたフォントが強制適用されます）
 st.markdown(
-    f"<h1 class='{font_class}' style='text-align: center; font-size: 130px; color: #DC2626; margin: 20px 0;'>{st.session_state.current_char}</h1>", 
+    f"<h1 class='{font_class}' style='text-align: center; font-size: 100px; color: #2563EB; margin: 20px 0;'>{st.session_state.current_char}</h1>", 
     unsafe_allow_html=True
 )
 
