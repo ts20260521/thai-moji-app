@@ -86,6 +86,7 @@ THAI_VOWELS = {
     "กาว": ["kaaw (特殊母音 aaw)", "kaw (短母音 aw)", "kiw (特殊母音 iu)", "koo (長母音 oo)"],
     "กุย": ["kui (特殊母音 ui)", "kuay (特殊母音 uay)", "koey (特殊母音 oey)", "kiw (特殊母音 iu)"],
     "เกย": ["koey (特殊母音 oey)", "kui (特殊母音 ui)", "keay (特殊母音 eay)", "kiaa (長母音 iaa)"]
+}
 
 # --- 🔤 文字を画像化する魔法の関数（両フォントファイル読み込み版） ---
 def create_letter_image(text, use_modern=False):
