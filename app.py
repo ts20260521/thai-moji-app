@@ -24,39 +24,32 @@ THAI_CONSONANTS = {
     "ว": ["wo waen (指輪)", "ro rua (船)", "lo ling (猿)", "o ang (洗面器)"]
 }
 
-# --- 🔤 文字を画像化する魔法の関数（エラー対策強化版） ---
+# --- 🔤 文字を画像化する魔法の関数（両フォントファイル読み込み版） ---
 def create_letter_image(text, use_modern=False):
     # 200x200マスの白い画像を作る
     img = Image.new("RGB", (200, 200), "#F0F2F6")
     draw = ImageDraw.Draw(img)
     
-    font_path = "Kanit-Regular.ttf"
-    
-    # フォント読み込みのエラーを完全に防ぐセーフティネット
-    if use_modern and os.path.exists(font_path):
+    # 状況に応じて読み込むフォントファイルを切り替える
+    if use_modern:
+        font_path = "Kanit-Regular.ttf"
+    else:
+        font_path = "Sarabun-Regular.ttf" # 👈 アップロードした標準フォントを指定
+
+    # フォントの読み込み
+    if os.path.exists(font_path):
         try:
             font = ImageFont.truetype(font_path, 120)
         except Exception:
             font = ImageFont.load_default()
     else:
-        # サーバー環境（Linux）でも標準のタイ文字が出せるように、一般的なフォントを上から順に自動探索します
-        fallback_fonts = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-            "arial.ttf"
-        ]
-        font = None
-        for f_path in fallback_fonts:
-            if os.path.exists(f_path) or not f_path.endswith(".ttf"):
-                try:
-                    font = ImageFont.truetype(f_path, 120)
-                    break
-                except Exception:
-                    continue
-        if font is None:
+        # 万が一ファイルが見つからない場合のセーフティネット
+        try:
+            font = ImageFont.truetype("arial.ttf", 120)
+        except Exception:
             font = ImageFont.load_default()
 
-    # 文字を中央寄りに描画（fillの色を少し濃くしました）
+    # 文字を中央寄りに描画
     draw.text((40, 20), text, fill="#0F172A" if not use_modern else "#DC2626", font=font)
     return img
 
