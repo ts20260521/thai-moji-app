@@ -127,12 +127,21 @@ if "score" not in st.session_state:
     st.session_state.answered = False
     st.session_state.feedback = ""
 
+def get_current_pool():
+    if st.session_state.mode == "子音のみ":
+        return THAI_CONSONANTS
+    elif st.session_state.mode == "母音のみ":
+        return THAI_VOWELS
+    else:
+        return {**THAI_CONSONANTS, **THAI_VOWELS}
+
 def next_question():
-    st.session_state.current_char = random.choice(list(THAI_CONSONANTS.keys()))
+    pool = get_current_pool()
+    st.session_state.current_char = random.choice(list(pool.keys()))
     st.session_state.answered = False
     st.session_state.feedback = ""
     
-    options = THAI_CONSONANTS[st.session_state.current_char].copy()
+    options = pool[st.session_state.current_char].copy()
     correct = options[0]
     random.shuffle(options)
     st.session_state.choices = options
