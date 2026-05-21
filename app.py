@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 # ページの設定
-st.set_page_config(page_title="タイ子音マスター42", page_icon="🇹🇭", layout="centered")
+st.set_page_config(page_title="タイ文字完全マスター", page_icon="🇹🇭", layout="centered")
 
 # タイ文字子音42文字の完全データ
 # 形式: {"文字": ["正解の読み(意味)", "ダミー1", "ダミー2", "ダミー3"]}
@@ -51,33 +51,98 @@ THAI_CONSONANTS = {
     "ฮ": ["ho nokhuk (ミミズクのh)", "ho hip (箱のh)", "ɔ ang (洗面器のɔɔ)", "ko kai (鶏のk)"]
 }
 
-# セッション状態の初期化
+# 母音32パターン（子音「ก」と組み合わせた表記）
+THAI_VOWELS = {
+    "กะ": ["ka (短母音 a)", "kaach (長母音 aa)", "ki (短母音 i)", "ko (短母音 o)"],
+    "กา": ["kaa (長母音 aa)", "ka (短母音 a)", "ki (短母音 i)", "kee (長母音 ee)"],
+    "กิ": ["ki (短母音 i)", "kii (長母音 ii)", "ku (短母音 u)", "ka (短母音 a)"],
+    "กี": ["kii (長母音 ii)", "ki (短母音 i)", "kue (短母音 ue)", "kee (長母音 ee)"],
+    "กึ": ["kue (短母音 ue)", "kuee (長母音 uee)", "ki (短母音 i)", "ku (短母音 u)"],
+    "กือ": ["kuee (長母音 uee)", "kue (短母音 ue)", "koo (長母音 oo)", "kii (長母音 ii)"],
+    "กุ": ["ku (短母音 u)", "kuu (長母音 uu)", "ki (短母音 i)", "ko (短母音 o)"],
+    "กู": ["kuu (長母音 uu)", "ku (短母音 u)", "koo (長母音 oo)", "kaa (長母音 aa)"],
+    "เกะ": ["ke (短母音 e)", "kee (長母音 ee)", "kae (短母音 ae)", "ko (短母音 o)"],
+    "เก": ["kee (長母音 ee)", "ke (短母音 e)", "kaee (長母音 aee)", "koo (長母音 oo)"],
+    "แกะ": ["kae (短母音 ae)", "kaee (長母音 aee)", "ke (短母音 e)", "ko (短母音 o)"],
+    "แก": ["kaee (長母音 aee)", "kae (短母音 ae)", "kee (長母音 ee)", "koo (長母音 oo)"],
+    "โกะ": ["ko (短母音 o)", "koo (長母音 oo)", "ke (短母音 e)", "kaw (短母音 aw)"],
+    "โก": ["koo (長母音 oo)", "ko (短母音 o)", "kee (長母音 ee)", "kaaw (長母音 aaw)"],
+    "เกาะ": ["kaw (短母音 aw)", "kaaw (長母音 aaw)", "ko (短母音 o)", "kae (短母音 ae)"],
+    "กอ": ["kaaw (長母音 aaw)", "kaw (短母音 aw)", "koo (長母音 oo)", "kaee (長母音 aee)"],
+    "เกอะ": ["koer (短母音 oer)", "koerr (長母音 oerr)", "ke (短母音 e)", "kue (短母音 ue)"],
+    "เกอ": ["koerr (長母音 oerr)", "koer (短母音 oer)", "kee (長母音 ee)", "kuee (長母音 uee)"],
+    "เกียะ": ["kia (短母音 ia)", "kiaa (長母音 iaa)", "kua (短母音 ua)", "kuea (短母音 uea)"],
+    "เกีย": ["kiaa (長母音 iaa)", "kia (短母音 ia)", "kuaa (長母音 uaa)", "kueaa (長母音 ueaa)"],
+    "เกือะ": ["kuea (短母音 uea)", "kueaa (長母音 ueaa)", "kia (短母音 ia)", "kua (短母音 ua)"],
+    "เกือ": ["kueaa (長母音 ueaa)", "kuea (短母音 uea)", "kiaa (長母音 iaa)", "kuaa (長母音 uaa)"],
+    "กัวะ": ["kua (短母音 ua)", "kuaa (長母音 uaa)", "kia (短母音 ia)", "kuea (短母音 uea)"],
+    "กัว": ["kuaa (長母音 uaa)", "kua (短母音 ua)", "kiaa (長母音 iaa)", "kueaa (長母音 ueaa)"],
+    "กิว": ["kiw (特殊母音 iu)", "kaw (短母音 aw)", "kay (特殊母音 ai)", "kui (特殊母音 ui)"],
+    "กัย": ["kay (特殊母音 ai)", "kaw (短母音 aw)", "kaaw (長母音 aaw)", "kiw (特殊母音 iu)"],
+    "ใก": ["kai (特殊母音 ai / 巻きのマイムアン)", "kai (特殊母音 ai / 結びのマイマライ)", "kam (特殊母音 am)", "kaaw (長母音 aaw)"],
+    "ไก": ["kai (特殊母音 ai / 結びのマイマライ)", "kai (特殊母音 ai / 巻きのマイムアン)", "kam (特殊母音 am)", "ka (短母音 a)"],
+    "กํา": ["kam (特殊母音 am)", "kai (特殊母音 ai)", "kaw (短母音 aw)", "ka (短母音 a)"],
+    "กาว": ["kaaw (特殊母音 aaw)", "kaw (短母音 aw)", "kiw (特殊母音 iu)", "koo (長母音 oo)"],
+    "กุย": ["kui (特殊母音 ui)", "kuay (特殊母音 uay)", "koey (特殊母音 oey)", "kiw (特殊母音 iu)"],
+    "เกย": ["koey (特殊母音 oey)", "kui (特殊母音 ui)", "keay (特殊母音 eay)", "kiaa (長母音 iaa)"]
+}
+
+# --- セッション状態の初期化 ---
+if "mode" not in st.session_state:
+    st.session_state.mode = "すべて"
 if "current_char" not in st.session_state:
-    st.session_state.current_char = random.choice(list(THAI_CONSONANTS.keys()))
     st.session_state.score = 0
     st.session_state.total = 0
     st.session_state.choices = []
     st.session_state.answered = False
     st.session_state.feedback = ""
 
-# 次の問題に進む関数
+# 現在のモードに基づくデータプール取得
+def get_current_pool():
+    if st.session_state.mode == "子音のみ":
+        return THAI_CONSONANTS
+    elif st.session_state.mode == "母音のみ":
+        return THAI_VOWELS
+    else:
+        return {**THAI_CONSONANTS, **THAI_VOWELS}
+
+# 次の問題セット
 def next_question():
-    st.session_state.current_char = random.choice(list(THAI_CONSONANTS.keys()))
+    pool = get_current_pool()
+    st.session_state.current_char = random.choice(list(pool.keys()))
     st.session_state.answered = False
     st.session_state.feedback = ""
     
-    options = THAI_CONSONANTS[st.session_state.current_char].copy()
+    options = pool[st.session_state.current_char].copy()
     correct = options[0]
     random.shuffle(options)
     st.session_state.choices = options
     st.session_state.correct_answer = correct
 
-if not st.session_state.choices:
+# 初回起動時のセット
+if "current_char" not in st.session_state or not st.session_state.choices:
     next_question()
 
-# --- 画面UIレイアウト ---
-st.title("🇹🇭 タイ文字子音完全マスター（42文字）")
-st.write("ランダムに出題されるタイ文字の読み方を当てよう！")
+# --- UIレイアウト ---
+st.title("🇹🇭 タイ文字究極マスター")
+st.write("子音44文字 ＋ 母音32パターンを完全網羅！")
+
+# サイドバー設定
+with st.sidebar:
+    st.header("学習設定")
+    old_mode = st.session_state.mode
+    st.session_state.mode = st.radio("出題モード", ["すべて", "子音のみ", "母音のみ"])
+    
+    # モードが切り替わったら問題をリセット
+    if old_mode != st.session_state.mode:
+        next_question()
+        st.rerun()
+        
+    if st.button("スコアをリセット"):
+        st.session_state.score = 0
+        st.session_state.total = 0
+        next_question()
+        st.rerun()
 
 # スコア表示
 st.subheader(f"成績: {st.session_state.score} / {st.session_state.total} 問正解")
@@ -86,7 +151,7 @@ st.markdown("---")
 
 # 文字を巨大表示
 st.markdown(
-    f"<h1 style='text-align: center; font-size: 120px; color: #2563EB;'>{st.session_state.current_char}</h1>", 
+    f"<h1 style='text-align: center; font-size: 110px; color: #DC2626;'>{st.session_state.current_char}</h1>", 
     unsafe_allow_html=True
 )
 
@@ -99,31 +164,18 @@ for choice in st.session_state.choices:
         st.session_state.total += 1
         if choice == st.session_state.correct_answer:
             st.session_state.score += 1
-            st.session_state.feedback = "⭕ 正解です！その調子！"
+            st.session_state.feedback = "⭕ 正解です！素晴らしい！"
         else:
             st.session_state.feedback = f"❌ 残念！正解は 「{st.session_state.correct_answer}」 です。"
         st.rerun()
 
-# 結果フィードバックと次の問題へのボタン
+# 結果と次の問題ボタン
 if st.session_state.answered:
     if "⭕" in st.session_state.feedback:
         st.success(st.session_state.feedback)
     else:
         st.error(st.session_state.feedback)
         
-    if st.button("次の文字へ進む ➡️", use_container_width=True):
+    if st.button("次の問題へ進む ➡️", use_container_width=True):
         next_question()
         st.rerun()
-
-# サイドバーにリセットと進捗一覧
-with st.sidebar:
-    st.header("オプション")
-    if st.button("スコアをリセット"):
-        st.session_state.score = 0
-        st.session_state.total = 0
-        next_question()
-        st.rerun()
-        
-    st.markdown("---")
-    st.write("💡 **豆知識**")
-    st.caption("「ฃ」と「ฅ」の2文字は、現代のタイ語では使われていませんので含まれていません。")
