@@ -151,7 +151,7 @@ st.markdown("---")
 
 # 文字を巨大表示
 st.markdown(
-    f"<h1 style='text-align: center; font-size: 110px; color: #DC2626;'>{st.session_state.current_char}</h1>", 
+    f"<h1 style='text-align: center; font-size: 100px; color: #2563EB;'>{st.session_state.current_char}</h1>", 
     unsafe_allow_html=True
 )
 
